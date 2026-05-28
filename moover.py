@@ -15,7 +15,6 @@ import signal
 import sys
 import time
 from dataclasses import dataclass
-from datetime import datetime, time as clock_time
 
 
 class CGPoint(ctypes.Structure):
@@ -161,21 +160,6 @@ def parse_args() -> argparse.Namespace:
         help="Seconds to wait between moves in the same interval. Default: 0.6.",
     )
     parser.add_argument(
-        "--work-start",
-        default="09:00",
-        help="Active window start time, in HH:MM format.",
-    )
-    parser.add_argument(
-        "--work-end",
-        default="17:30",
-        help="Active window end time, in HH:MM format.",
-    )
-    parser.add_argument(
-        "--ignore-schedule",
-        action="store_true",
-        help="Run regardless of the active window.",
-    )
-    parser.add_argument(
         "--run-once",
         action="store_true",
         help="Run one movement batch and exit. Useful for checking macOS permissions.",
@@ -183,52 +167,8 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def parse_clock_time(value: str) -> clock_time:
-    try:
-        return datetime.strptime(value, "%H:%M").time()
-    except ValueError as error:
-        raise argparse.ArgumentTypeError(
-            f"Invalid time {value!r}. Use HH:MM, for example 09:00."
-        ) from error
-
-
-def seconds_until_today(target: clock_time) -> int:
-    now = datetime.now()
-    target_datetime = now.replace(
-        hour=target.hour,
-        minute=target.minute,
-        second=0,
-        microsecond=0,
-    )
-    return max(0, int((target_datetime - now).total_seconds()))
-
-
-def is_inside_work_window(start: clock_time, end: clock_time) -> bool:
-    now = datetime.now().time()
-    return start <= now < end
-
-
-def should_stop_for_schedule(args: argparse.Namespace) -> bool:
-    return not args.ignore_schedule and not is_inside_work_window(
-        args.work_start_time, args.work_end_time
-    )
-
-
 def main() -> int:
     args = parse_args()
-    args.work_start_time = parse_clock_time(args.work_start)
-    args.work_end_time = parse_clock_time(args.work_end)
-    if args.work_start_time >= args.work_end_time:
-        print("Error: --work-start must be earlier than --work-end.", file=sys.stderr)
-        return 1
-
-    if should_stop_for_schedule(args):
-        print(
-            "Outside active window. Moover will not run.",
-            flush=True,
-        )
-        return 0
-
     cursor = MacCursor()
     screen = cursor.screen()
     running = True
@@ -249,10 +189,6 @@ def main() -> int:
 
     step = 0
     while running:
-        if should_stop_for_schedule(args):
-            print("Reached active window end. Moover stopping.", flush=True)
-            break
-
         for move_number in range(1, args.moves + 1):
             if not running:
                 break
@@ -273,11 +209,7 @@ def main() -> int:
         if args.run_once:
             break
 
-        seconds_to_sleep = args.interval
-        if not args.ignore_schedule:
-            seconds_to_sleep = min(seconds_to_sleep, seconds_until_today(args.work_end_time))
-
-        for _ in range(seconds_to_sleep):
+        for _ in range(args.interval):
             if not running:
                 break
             time.sleep(1)

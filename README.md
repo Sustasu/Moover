@@ -40,6 +40,8 @@ The installer copies Moover to:
 
 That keeps the background runner out of the macOS-protected Documents folder.
 
+The LaunchAgent is generated during install, so it uses the current Mac user's home folder automatically.
+
 To stop and remove the background runner, double-click:
 
 ```text
@@ -58,7 +60,7 @@ Logs are written to:
 To run one 3-move batch and exit:
 
 ```sh
-python3 moover.py --run-once --ignore-schedule
+python3 moover.py --run-once
 ```
 
 ## Customize
@@ -85,12 +87,6 @@ Move farther each time:
 
 ```sh
 python3 moover.py --distance 140
-```
-
-Adjust the active window:
-
-```sh
-python3 moover.py --work-start 09:30 --work-end 17:00
 ```
 
 ## macOS Permissions
