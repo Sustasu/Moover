@@ -6,6 +6,8 @@ Maintains local session activity.
 
 Moover does not click, type, open apps, or change windows.
 
+Moover skips movement while the macOS session is locked and resumes after unlock.
+
 ## Run It
 
 If macOS says the files are from an unidentified developer, run this once from the folder:
@@ -101,6 +103,12 @@ Move farther each time:
 
 ```sh
 python3 moover.py --distance 140
+```
+
+Run even if the session appears locked:
+
+```sh
+python3 moover.py --ignore-lock-state
 ```
 
 ## macOS Permissions

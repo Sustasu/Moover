@@ -13,6 +13,7 @@ import ctypes
 import math
 import random
 import signal
+import subprocess
 import sys
 import time
 from dataclasses import dataclass
@@ -135,6 +136,24 @@ def next_position(origin: CGPoint, screen: Screen, distance: int, step: int) -> 
     )
 
 
+def is_screen_locked() -> bool:
+    try:
+        result = subprocess.run(
+            ["/usr/sbin/ioreg", "-n", "Root", "-d1"],
+            capture_output=True,
+            text=True,
+            timeout=2,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+
+    return (
+        '"CGSSessionScreenIsLocked" = Yes' in result.stdout
+        or '"IOConsoleLocked" = Yes' in result.stdout
+    )
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Maintains local session activity.")
     parser.add_argument(
@@ -172,6 +191,11 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Run one movement batch and exit. Useful for checking macOS permissions.",
     )
+    parser.add_argument(
+        "--ignore-lock-state",
+        action="store_true",
+        help="Run even when the macOS session appears locked.",
+    )
     return parser.parse_args()
 
 
@@ -204,6 +228,14 @@ def main() -> int:
 
     step = 0
     while running:
+        if not args.ignore_lock_state and is_screen_locked():
+            print("Session locked. Moover waiting.", flush=True)
+            for _ in range(args.interval):
+                if not running:
+                    break
+                time.sleep(1)
+            continue
+
         for move_number in range(1, args.moves + 1):
             if not running:
                 break
