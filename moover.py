@@ -59,6 +59,11 @@ class MacCursor:
         ]
         self.core_graphics.CGEventCreateMouseEvent.restype = ctypes.c_void_p
         self.core_graphics.CGEventPost.argtypes = [ctypes.c_uint32, ctypes.c_void_p]
+        
+        # Mouse event types
+        self.MOUSE_MOVED = 5
+        self.LEFT_MOUSE_DOWN = 1
+        self.LEFT_MOUSE_UP = 2
 
     def screen(self) -> Screen:
         display_id = self.core_graphics.CGMainDisplayID()
@@ -86,10 +91,8 @@ class MacCursor:
 
         # Some macOS environments refuse direct cursor warping but still allow
         # posting a normal mouse-moved event.
-        mouse_moved = 5
-        left_mouse_button = 0
         event = self.core_graphics.CGEventCreateMouseEvent(
-            None, mouse_moved, point, left_mouse_button
+            None, self.MOUSE_MOVED, point, 0
         )
         if not event:
             raise RuntimeError(
@@ -102,6 +105,36 @@ class MacCursor:
             self.core_graphics.CGEventPost(hid_event_tap, event)
         finally:
             self.core_graphics.CFRelease(event)
+
+    def click_at(self, point: CGPoint) -> None:
+        """Click at the specified point."""
+        # First move to the point
+        self.move_to(point)
+        
+        # Post mouse down event
+        mouse_down_event = self.core_graphics.CGEventCreateMouseEvent(
+            None, self.LEFT_MOUSE_DOWN, point, 0
+        )
+        if mouse_down_event:
+            try:
+                hid_event_tap = 0
+                self.core_graphics.CGEventPost(hid_event_tap, mouse_down_event)
+            finally:
+                self.core_graphics.CFRelease(mouse_down_event)
+        
+        # Small delay between down and up
+        time.sleep(0.05)
+        
+        # Post mouse up event
+        mouse_up_event = self.core_graphics.CGEventCreateMouseEvent(
+            None, self.LEFT_MOUSE_UP, point, 0
+        )
+        if mouse_up_event:
+            try:
+                hid_event_tap = 0
+                self.core_graphics.CGEventPost(hid_event_tap, mouse_up_event)
+            finally:
+                self.core_graphics.CFRelease(mouse_up_event)
 
 
 def clamp(value: float, minimum: float, maximum: float) -> float:
@@ -249,6 +282,15 @@ def main() -> int:
                 flush=True,
             )
             step += 1
+
+            # Move to top middle and click
+            top_middle = CGPoint(screen.x + screen.width / 2, screen.y + 50)
+            cursor.click_at(top_middle)
+            print(
+                f"Move {move_number}/{args.moves}: "
+                f"Clicked at top middle ({top_middle.x:.0f}, {top_middle.y:.0f})",
+                flush=True,
+            )
 
             if move_number < args.moves:
                 time.sleep(random.uniform(args.min_move_delay, args.max_move_delay))
