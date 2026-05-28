@@ -9,11 +9,11 @@
   <key>ProgramArguments</key>
   <array>
     <string>/usr/bin/python3</string>
-    <string>/Users/iustinbcs/Documents/automatic clicker/moover.py</string>
+    <string>/Users/iustinbcs/Library/Application Support/Moover/moover.py</string>
   </array>
 
   <key>WorkingDirectory</key>
-  <string>/Users/iustinbcs/Documents/automatic clicker</string>
+  <string>/Users/iustinbcs/Library/Application Support/Moover</string>
 
   <key>RunAtLoad</key>
   <true/>

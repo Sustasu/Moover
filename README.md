@@ -30,6 +30,14 @@ install_moover.command
 
 This installs a macOS LaunchAgent that starts Moover in the background. It starts at login and at 09:00, but Moover itself only runs between 09:00 and 17:30.
 
+The installer copies Moover to:
+
+```text
+~/Library/Application Support/Moover/moover.py
+```
+
+That keeps the background runner out of the macOS-protected Documents folder.
+
 To stop and remove the background runner, double-click:
 
 ```text
