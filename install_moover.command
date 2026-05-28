@@ -17,5 +17,5 @@ launchctl kickstart -k "gui/$(id -u)/$LABEL"
 
 echo "Installed and started $LABEL."
 echo "Moover script location: $APP_SUPPORT/moover.py"
-echo "It will only move the cursor between 09:00 and 17:30."
+echo "Active window enabled."
 echo "Logs: /tmp/moover.log"

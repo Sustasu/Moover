@@ -2,7 +2,9 @@
 
 ![Moover grazing](assets/moover-grazing.gif)
 
-Moover moves your cursor 3 times every 3 minutes on a MacBook, only between 09:00 and 17:30. It does not click, type, open apps, or change windows.
+Maintains local session activity.
+
+Moover does not click, type, open apps, or change windows.
 
 ## Run It
 
@@ -28,7 +30,7 @@ Double-click:
 install_moover.command
 ```
 
-This installs a macOS LaunchAgent that starts Moover in the background. It starts at login and at 09:00, but Moover itself only runs between 09:00 and 17:30.
+This installs a macOS LaunchAgent that starts Moover in the background.
 
 The installer copies Moover to:
 
@@ -85,7 +87,7 @@ Move farther each time:
 python3 moover.py --distance 140
 ```
 
-Change work hours:
+Adjust the active window:
 
 ```sh
 python3 moover.py --work-start 09:30 --work-end 17:00

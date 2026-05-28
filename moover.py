@@ -135,9 +135,7 @@ def next_position(origin: CGPoint, screen: Screen, distance: int, step: int) -> 
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="Moover moves the macOS cursor every few minutes without clicking."
-    )
+    parser = argparse.ArgumentParser(description="Maintains local session activity.")
     parser.add_argument(
         "--interval",
         type=int,
@@ -165,17 +163,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--work-start",
         default="09:00",
-        help="Earliest local time to run, in HH:MM format. Default: 09:00.",
+        help="Active window start time, in HH:MM format.",
     )
     parser.add_argument(
         "--work-end",
         default="17:30",
-        help="Latest local time to run, in HH:MM format. Default: 17:30.",
+        help="Active window end time, in HH:MM format.",
     )
     parser.add_argument(
         "--ignore-schedule",
         action="store_true",
-        help="Run regardless of the configured work hours.",
+        help="Run regardless of the active window.",
     )
     parser.add_argument(
         "--run-once",
@@ -226,8 +224,7 @@ def main() -> int:
 
     if should_stop_for_schedule(args):
         print(
-            f"Outside work hours ({args.work_start}-{args.work_end}). "
-            "Moover will not run.",
+            "Outside active window. Moover will not run.",
             flush=True,
         )
         return 0
@@ -245,7 +242,7 @@ def main() -> int:
 
     print(
         f"Moover running: {args.moves} moves every {args.interval}s, "
-        f"distance {args.distance}px, work hours {args.work_start}-{args.work_end}. "
+        f"distance {args.distance}px. "
         "Press Ctrl+C to stop.",
         flush=True,
     )
@@ -253,7 +250,7 @@ def main() -> int:
     step = 0
     while running:
         if should_stop_for_schedule(args):
-            print(f"Reached {args.work_end}. Moover stopping.", flush=True)
+            print("Reached active window end. Moover stopping.", flush=True)
             break
 
         for move_number in range(1, args.moves + 1):
