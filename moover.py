@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import ctypes
 import math
+import random
 import signal
 import sys
 import time
@@ -107,12 +108,13 @@ def clamp(value: float, minimum: float, maximum: float) -> float:
 
 
 def next_position(origin: CGPoint, screen: Screen, distance: int, step: int) -> CGPoint:
-    angle = step * (math.pi / 2)
+    angle = (step * (math.pi / 2)) + random.uniform(-0.45, 0.45)
+    move_distance = random.uniform(distance * 0.55, distance * 1.35)
 
     if screen.width <= 0 or screen.height <= 0:
         return CGPoint(
-            origin.x + (math.cos(angle) * distance),
-            origin.y + (math.sin(angle) * distance),
+            origin.x + (math.cos(angle) * move_distance),
+            origin.y + (math.sin(angle) * move_distance),
         )
 
     center_x = screen.x + (screen.width / 2)
@@ -121,12 +123,12 @@ def next_position(origin: CGPoint, screen: Screen, distance: int, step: int) -> 
     margin = 8
     return CGPoint(
         clamp(
-            center_x + (math.cos(angle) * distance),
+            center_x + (math.cos(angle) * move_distance),
             screen.x + margin,
             screen.x + screen.width - margin,
         ),
         clamp(
-            center_y + (math.sin(angle) * distance),
+            center_y + (math.sin(angle) * move_distance),
             screen.y + margin,
             screen.y + screen.height - margin,
         ),
@@ -150,14 +152,20 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--moves",
         type=int,
-        default=3,
-        help="Number of cursor moves to make every interval. Default: 3.",
+        default=10,
+        help="Number of cursor moves to make every interval. Default: 10.",
     )
     parser.add_argument(
-        "--move-delay",
+        "--min-move-delay",
         type=float,
         default=0.6,
-        help="Seconds to wait between moves in the same interval. Default: 0.6.",
+        help="Minimum seconds between moves in the same interval. Default: 0.6.",
+    )
+    parser.add_argument(
+        "--max-move-delay",
+        type=float,
+        default=2.4,
+        help="Maximum seconds between moves in the same interval. Default: 2.4.",
     )
     parser.add_argument(
         "--run-once",
@@ -169,6 +177,13 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
+    if args.min_move_delay < 0 or args.max_move_delay < 0:
+        print("Error: move delays must be zero or greater.", file=sys.stderr)
+        return 1
+    if args.min_move_delay > args.max_move_delay:
+        print("Error: --min-move-delay must be no greater than --max-move-delay.", file=sys.stderr)
+        return 1
+
     cursor = MacCursor()
     screen = cursor.screen()
     running = True
@@ -204,7 +219,7 @@ def main() -> int:
             step += 1
 
             if move_number < args.moves:
-                time.sleep(args.move_delay)
+                time.sleep(random.uniform(args.min_move_delay, args.max_move_delay))
 
         if args.run_once:
             break

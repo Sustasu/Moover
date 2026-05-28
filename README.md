@@ -65,7 +65,7 @@ Logs are written to:
 
 ## Check It Once
 
-To run one 3-move batch and exit:
+To run one movement batch and exit:
 
 ```sh
 python3 moover.py --run-once
@@ -89,6 +89,12 @@ Move 5 times every interval:
 
 ```sh
 python3 moover.py --moves 5
+```
+
+Use a wider delay range inside each movement batch:
+
+```sh
+python3 moover.py --min-move-delay 0.4 --max-move-delay 3
 ```
 
 Move farther each time:
