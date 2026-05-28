@@ -8,6 +8,14 @@ Moover does not click, type, open apps, or change windows.
 
 ## Run It
 
+If macOS says the files are from an unidentified developer, run this once from the folder:
+
+```sh
+./trust_moover.command
+```
+
+This clears the downloaded-file quarantine flag for this local Moover folder.
+
 From this folder:
 
 ```sh
