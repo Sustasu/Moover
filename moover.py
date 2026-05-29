@@ -192,8 +192,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--duration",
         type=float,
-        default=20,
-        help="Seconds to move continuously each interval. Default: 20.",
+        default=60,
+        help="Seconds to move continuously each interval. Default: 60.",
     )
     parser.add_argument(
         "--step-delay",

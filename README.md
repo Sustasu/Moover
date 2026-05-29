@@ -58,6 +58,8 @@ To stop and remove the background runner, double-click:
 uninstall_moover.command
 ```
 
+This removes the installed LaunchAgent, the copied background script, and Moover log files. It does not delete this source folder.
+
 Logs are written to:
 
 ```text
@@ -87,10 +89,10 @@ Move every minute:
 python3 moover.py --interval 60
 ```
 
-Move continuously for 20 seconds every interval, which is the default:
+Move continuously for 1 minute every interval, which is the default:
 
 ```sh
-python3 moover.py --duration 20
+python3 moover.py --duration 60
 ```
 
 Use smoother or lighter movement updates:
