@@ -75,10 +75,10 @@ python3 moover.py --run-once
 
 ## Customize
 
-Move every 3 minutes, which is the default:
+Move every 4 minutes, which is the default:
 
 ```sh
-python3 moover.py --interval 180
+python3 moover.py --interval 240
 ```
 
 Move every minute:
@@ -87,19 +87,19 @@ Move every minute:
 python3 moover.py --interval 60
 ```
 
-Move 5 times every interval:
+Move continuously for 20 seconds every interval, which is the default:
 
 ```sh
-python3 moover.py --moves 5
+python3 moover.py --duration 20
 ```
 
-Use a wider delay range inside each movement batch:
+Use smoother or lighter movement updates:
 
 ```sh
-python3 moover.py --min-move-delay 0.4 --max-move-delay 3
+python3 moover.py --step-delay 0.03
 ```
 
-Move farther each time:
+Use a wider circular path:
 
 ```sh
 python3 moover.py --distance 140

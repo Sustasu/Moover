@@ -17,6 +17,7 @@ import subprocess
 import sys
 import time
 from dataclasses import dataclass
+from typing import Callable
 
 
 class CGPoint(ctypes.Structure):
@@ -32,6 +33,8 @@ class Screen:
 
 
 class MacCursor:
+    MOUSE_MOVED = 5
+
     def __init__(self) -> None:
         self.core_graphics = ctypes.CDLL(
             "/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics"
@@ -106,32 +109,52 @@ def clamp(value: float, minimum: float, maximum: float) -> float:
     return max(minimum, min(value, maximum))
 
 
-def next_position(origin: CGPoint, screen: Screen, distance: int, step: int) -> CGPoint:
-    angle = (step * (math.pi / 2)) + random.uniform(-0.45, 0.45)
-    move_distance = random.uniform(distance * 0.55, distance * 1.35)
+def circular_position(center: CGPoint, screen: Screen, radius: int, angle: float) -> CGPoint:
+    wobble = random.uniform(radius * -0.08, radius * 0.08)
+    x_radius = max(4, radius + wobble)
+    y_radius = max(4, (radius * 0.72) + (wobble * 0.6))
+
+    x = center.x + (math.cos(angle) * x_radius)
+    y = center.y + (math.sin(angle) * y_radius)
 
     if screen.width <= 0 or screen.height <= 0:
-        return CGPoint(
-            origin.x + (math.cos(angle) * move_distance),
-            origin.y + (math.sin(angle) * move_distance),
-        )
+        return CGPoint(x, y)
 
-    center_x = screen.x + (screen.width / 2)
-    center_y = screen.y + (screen.height / 2)
-
-    margin = 8
+    margin = max(8, radius + 8)
     return CGPoint(
-        clamp(
-            center_x + (math.cos(angle) * move_distance),
-            screen.x + margin,
-            screen.x + screen.width - margin,
-        ),
-        clamp(
-            center_y + (math.sin(angle) * move_distance),
-            screen.y + margin,
-            screen.y + screen.height - margin,
-        ),
+        clamp(x, screen.x + margin, screen.x + screen.width - margin),
+        clamp(y, screen.y + margin, screen.y + screen.height - margin),
     )
+
+
+def run_circular_motion(
+    cursor: MacCursor,
+    screen: Screen,
+    duration: float,
+    radius: int,
+    step_delay: float,
+    keep_running: Callable[[], bool],
+) -> int:
+    center = cursor.position()
+    start = time.monotonic()
+    angle = random.uniform(0, math.tau)
+    direction = random.choice([-1, 1])
+    rotations_per_second = random.uniform(0.42, 0.62)
+    moves = 0
+
+    while keep_running():
+        elapsed = time.monotonic() - start
+        if elapsed >= duration:
+            break
+
+        angle += direction * math.tau * rotations_per_second * step_delay
+        angle += random.uniform(-0.025, 0.025)
+        target = circular_position(center, screen, radius, angle)
+        cursor.move_to(target)
+        moves += 1
+        time.sleep(step_delay)
+
+    return moves
 
 
 def is_screen_locked() -> bool:
@@ -157,32 +180,26 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--interval",
         type=int,
-        default=180,
-        help="Seconds between cursor moves. Default: 180 seconds, or 3 minutes.",
+        default=240,
+        help="Seconds between cursor moves. Default: 240 seconds, or 4 minutes.",
     )
     parser.add_argument(
         "--distance",
         type=int,
         default=80,
-        help="Pixels to move each time. Default: 80.",
+        help="Circular movement radius in pixels. Default: 80.",
     )
     parser.add_argument(
-        "--moves",
-        type=int,
-        default=10,
-        help="Number of cursor moves to make every interval. Default: 10.",
-    )
-    parser.add_argument(
-        "--min-move-delay",
+        "--duration",
         type=float,
-        default=0.6,
-        help="Minimum seconds between moves in the same interval. Default: 0.6.",
+        default=20,
+        help="Seconds to move continuously each interval. Default: 20.",
     )
     parser.add_argument(
-        "--max-move-delay",
+        "--step-delay",
         type=float,
-        default=2.4,
-        help="Maximum seconds between moves in the same interval. Default: 2.4.",
+        default=0.035,
+        help="Seconds between tiny cursor updates. Default: 0.035.",
     )
     parser.add_argument(
         "--run-once",
@@ -199,11 +216,11 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
-    if args.min_move_delay < 0 or args.max_move_delay < 0:
-        print("Error: move delays must be zero or greater.", file=sys.stderr)
+    if args.duration <= 0:
+        print("Error: --duration must be greater than zero.", file=sys.stderr)
         return 1
-    if args.min_move_delay > args.max_move_delay:
-        print("Error: --min-move-delay must be no greater than --max-move-delay.", file=sys.stderr)
+    if args.step_delay <= 0:
+        print("Error: --step-delay must be greater than zero.", file=sys.stderr)
         return 1
 
     cursor = MacCursor()
@@ -218,13 +235,12 @@ def main() -> int:
     signal.signal(signal.SIGTERM, stop)
 
     print(
-        f"Moover running: {args.moves} moves every {args.interval}s, "
-        f"distance {args.distance}px. "
+        f"Moover running: {args.duration:g}s circular movement every "
+        f"{args.interval}s, radius {args.distance}px. "
         "Press Ctrl+C to stop.",
         flush=True,
     )
 
-    step = 0
     while running:
         if not args.ignore_lock_state and is_screen_locked():
             print("Session locked. Moover waiting.", flush=True)
@@ -234,22 +250,15 @@ def main() -> int:
                 time.sleep(1)
             continue
 
-        for move_number in range(1, args.moves + 1):
-            if not running:
-                break
-
-            current = cursor.position()
-            target = next_position(current, screen, args.distance, step)
-            cursor.move_to(target)
-            print(
-                f"Move {move_number}/{args.moves}: "
-                f"({target.x:.0f}, {target.y:.0f})",
-                flush=True,
-            )
-            step += 1
-
-            if move_number < args.moves:
-                time.sleep(random.uniform(args.min_move_delay, args.max_move_delay))
+        moves = run_circular_motion(
+            cursor=cursor,
+            screen=screen,
+            duration=args.duration,
+            radius=args.distance,
+            step_delay=args.step_delay,
+            keep_running=lambda: running,
+        )
+        print(f"Completed circular movement with {moves} updates.", flush=True)
 
         if args.run_once:
             break
